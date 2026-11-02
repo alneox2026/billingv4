@@ -1,0 +1,27 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Collection IDs may use the canonical shared names (for example *_v3)
+    // or explicit deployment-specific names. Server SDKs use IAM and bypass
+    // these rules; these rules protect direct mobile/web client access. Keep
+    // the documented collection-family prefixes when customizing names.
+    function isOwnerReadableCollection(collection) {
+      return collection.matches('customer_billing_accounts_[A-Za-z0-9_-]+') ||
+             collection.matches('customer_wallets_[A-Za-z0-9_-]+') ||
+             collection.matches('wallet_transactions_[A-Za-z0-9_-]+') ||
+             collection.matches('customer_billing_periods_[A-Za-z0-9_-]+');
+    }
+
+    match /{collection}/{documentId} {
+      // Billing account, wallet, transaction, and period documents are
+      // read-only for their authenticated owner. All writes remain backend
+      // only, and every other collection—including webhook receipts,
+      // cancellation requests, reservations, and ledgers—is denied by default.
+      allow read: if request.auth != null &&
+                    isOwnerReadableCollection(collection) &&
+                    resource.data.owner_uid == request.auth.uid;
+      allow write: if false;
+    }
+  }
+}

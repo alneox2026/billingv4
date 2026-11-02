@@ -1,0 +1,11 @@
+steps:
+  - name: gcr.io/cloud-builders/docker
+    args:
+      - build
+      - -t
+      - ${_IMAGE_TAG}
+      - -f
+      - services/billing_api_v3/Dockerfile
+      - .
+images:
+  - ${_IMAGE_TAG}
